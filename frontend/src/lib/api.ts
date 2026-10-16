@@ -2,7 +2,7 @@ import type { BacktestResponse } from '../types/backtest'
 import type { BacktestRequest } from '../types/experiment'
 const object = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
 const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
-const date = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)
+const date = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2}))?$/.test(v) && Number.isFinite(Date.parse(v))
 export function isBacktestResponse(v: unknown): v is BacktestResponse {
   if (!object(v) || !object(v.summary) || !Array.isArray(v.equity) || !Array.isArray(v.trades)) return false
   if (v.data_info != null) {

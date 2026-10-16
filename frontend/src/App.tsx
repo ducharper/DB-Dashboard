@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import Journal, { JournalReference } from './components/Journal'
 import { JournalIcon, PencilIcon } from './components/WorkspaceIcons'
+import PortfolioDashboard from './components/PortfolioDashboard'
+import StrategyLibrary from './components/StrategyLibrary'
 import StartScreen from './components/StartScreen'
 import ChromeLogo from './components/ChromeLogo'
 import BacktestForm from './components/BacktestForm'
@@ -12,6 +14,7 @@ import { strategyNames } from './types/experiment'
 import type { CompletedRun } from './types/experiment'
 import { metric, money } from './lib/format'
 import './workspace.css'
+import './dashboard.css'
 export default function App() {
   const drawer = useRef<HTMLDialogElement>(null)
   const editButton = useRef<HTMLButtonElement>(null)
@@ -78,25 +81,19 @@ export default function App() {
   const [formRevision, setFormRevision] = useState(0)
   const [formRequest, setFormRequest] = useState<CompletedRun['request']>()
   const [tab, setTab] = useState<'overview' | 'trades' | 'details'>('overview')
-  const [workspaceTab, setWorkspaceTab] = useState<'backtest' | 'saved' | 'journal'>('backtest')
+  const [workspaceTab, setWorkspaceTab] = useState<'portfolio' | 'strategies' | 'backtest' | 'saved' | 'journal'>('portfolio')
+  const workspaceLabels = { portfolio: 'Portfolio', strategies: 'Strategies', backtest: 'Research', saved: 'Saved experiments', journal: 'Journal' }
   const primaryMetrics = ['Total Return', 'Benchmark Return', 'Sharpe Ratio', 'Max Drawdown']
-  function receive(completed: CompletedRun) { setRun(completed); closeParameters(); setDirty(false); setHistoryRevision(n => n + 1) }
+  function receive(completed: CompletedRun) { setRun(completed); setWorkspaceTab('backtest'); closeParameters(); setDirty(false); setHistoryRevision(n => n + 1) }
   function openSaved(saved: CompletedRun) { setRun(saved); setFormRequest(saved.request); setFormRevision(n => n + 1); setDirty(false); setWorkspaceTab('backtest') }
   return <div className="app-shell">
     <header className="topbar"><a href="#main-content" className="skip-link">Skip to results</a><ChromeLogo /><div className="header-controls">
-      <div className="tabs workspace-tabs" role="tablist" aria-label="Workspace">
-        {(['backtest', 'saved', 'journal'] as const).map(name => <button className="parameter-orb nav-orb" aria-label={name === 'backtest' ? 'Backtest' : name === 'saved' ? 'Saved runs' : 'Journal'} data-tooltip={name === 'backtest' ? 'Backtest' : name === 'saved' ? 'Saved runs' : 'Journal'} key={name} id={`workspace-${name}-tab`} role="tab" aria-controls={`workspace-${name}-panel`} aria-selected={workspaceTab === name} tabIndex={workspaceTab === name ? 0 : -1} onClick={() => setWorkspaceTab(name)} onKeyDown={event => {
-          if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
-            event.preventDefault()
-            const order = ['backtest', 'saved', 'journal'] as const
-            const next = event.key === 'Home' ? 'backtest' : event.key === 'End' ? 'journal' : order[(order.indexOf(name) + (event.key === 'ArrowRight' ? 1 : 2)) % 3]
-            setWorkspaceTab(next)
-            document.getElementById(`workspace-${next}-tab`)?.focus()
-          }
-        }}>{name === 'journal' ? <JournalIcon /> : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{name === 'backtest' ? <><path d="M4 4v16h16" /><path d="m7 14 4-5 4 3 5-7" /></> : <><rect x="4" y="8" width="16" height="12" rx="2" /><path d="M3 4h18v4H3zM9 12h6" /></>}</svg>}</button>)}
-      </div>
+      <span className="local-badge">LOCAL WORKSPACE · READ ONLY</span>
       <button ref={editButton} className="edit-parameters parameter-orb" aria-label="Edit parameters" data-tooltip="Edit parameters" aria-haspopup="dialog" aria-expanded={editing} onClick={openParameters}><PencilIcon /></button></div></header>
     <main className="workspace">
+      <nav className="dashboard-workspace-nav" aria-label="Workspace">{(['portfolio', 'strategies', 'backtest', 'saved', 'journal'] as const).map(name => <button key={name} id={`workspace-${name}-tab`} aria-current={workspaceTab === name ? 'page' : undefined} onClick={() => setWorkspaceTab(name)}>{workspaceLabels[name]}</button>)}</nav>
+      <div className="dashboard-panel" hidden={workspaceTab !== 'portfolio'}><PortfolioDashboard active={workspaceTab === 'portfolio'} /></div>
+      <div className="dashboard-panel" hidden={workspaceTab !== 'strategies'}><StrategyLibrary /></div>
       <div id="workspace-journal-panel" role="tabpanel" aria-labelledby="workspace-journal-tab" hidden={workspaceTab !== 'journal'}><Journal /></div>
       <div id="workspace-saved-panel" role="tabpanel" aria-labelledby="workspace-saved-tab" hidden={workspaceTab !== 'saved'}>
         {workspaceTab === 'saved' && <RunHistory key={`history-${historyRevision}`} revision={historyRevision} busy={running} activeId={run?.id} onWorking={setHistoryWorking} onOpen={openSaved} onDelete={id => { if (run?.id === id) setRun(null) }} />}
@@ -104,8 +101,8 @@ export default function App() {
       <div id="workspace-backtest-panel" role="tabpanel" aria-labelledby="workspace-backtest-tab" hidden={workspaceTab !== 'backtest'}>
       <div className="workspace-body">
         <div id="main-content" tabIndex={-1} className="results-panel" aria-label="Backtest results" aria-busy={running}>
-          {!run ? <StartScreen running={running} onConfigure={openParameters} onSaved={() => setWorkspaceTab('saved')} onJournal={() => setWorkspaceTab('journal')} /> : <>
-            <div className="run-heading"><div><span className="eyebrow">RUN RESULTS</span><h2>{run.request.symbol} <span> / {strategyNames[run.request.strategy.name]}</span></h2><p>{run.request.start} → {run.request.end} · {money(run.request.initial_cash)} capital · {run.request.cost_bps} bps</p></div><span className="complete-badge">Completed {new Date(run.completedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span></div>
+          {!run ? workspaceTab === 'backtest' && <StartScreen running={running} onConfigure={openParameters} onSaved={() => setWorkspaceTab('saved')} onJournal={() => setWorkspaceTab('journal')} /> : <>
+            <div className="run-heading"><div><span className="eyebrow">PYTHON ENGINE · SIMULATED RESULTS</span><h2>{run.request.symbol} <span> / {strategyNames[run.request.strategy.name]}</span></h2><p>{run.request.start} → {run.request.end} · {money(run.request.initial_cash)} capital · {run.request.cost_bps} bps</p></div><span className="complete-badge">Completed {new Date(run.completedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}</span></div>
             {(dirty || running) && <p className="notice" role="status">{running ? 'A new run is in progress. The results below belong to your last successful run.' : 'Settings changed. Run again to update the results below.'}</p>}
             {run.result.data_info && <div className="field-help"><p>{run.result.data_info.source === 'ibkr' ? 'Interactive Brokers' : 'Yahoo Finance'} · {run.result.data_info.price_basis} · {run.result.data_info.bar_count} daily bars · {run.result.data_info.first_date} → {run.result.data_info.last_date}</p>{run.result.data_info.warnings.map(warning => <p className="notice" key={warning}>{warning}</p>)}</div>}
             <dl className="metrics-grid">{primaryMetrics.map(name => <div className="metric-card" key={name}><dt>{name}</dt><dd>{metric(name, run.result.summary[name])}</dd><span>{name === 'Total Return' ? 'After strategy costs' : name === 'Benchmark Return' ? 'Buy-and-hold · before costs' : name === 'Sharpe Ratio' ? 'Risk-adjusted performance' : 'Largest peak-to-trough decline'}</span></div>)}</dl>
@@ -126,7 +123,7 @@ export default function App() {
             <div id="details-panel" role="tabpanel" aria-labelledby="details-tab" hidden={tab !== 'details'}>              <section className="panel secondary-metrics"><h2>Performance details</h2><dl>{Object.entries(run.result.summary).filter(([name]) => !primaryMetrics.includes(name)).map(([name, value]) => <div key={name}><dt>{name}</dt><dd>{metric(name, value)}</dd></div>)}</dl></section><RunSettings request={run.request} /></div>
           </>}
         </div>
-      </div></div><footer className="workspace-footer">Practice Backtester <span>Daily prices · Results saved locally</span></footer>
+      </div></div><footer className="workspace-footer">Trading workspace <span>Snapshots & research · Stored locally · No order execution</span></footer>
     </main>
     <dialog ref={drawer} className={`parameter-drawer parameter-popover${referenceOpen ? ' with-journal' : ''}`} aria-label="Edit backtest parameters" onClose={() => setEditing(false)} onCancel={event => { event.preventDefault(); closeParameters() }} onClick={event => { const bounds = event.currentTarget.getBoundingClientRect(); if (event.target === event.currentTarget && (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom)) closeParameters() }}>
       <div className="drawer-heading"><div className="editor-orbs"><button className="parameter-orb" aria-label="Quick journal" aria-expanded={referenceOpen} onClick={() => setReferenceOpen(value => !value)} title="Quick journal"><JournalIcon /></button><button className="parameter-orb close-orb" aria-pressed="true" onClick={closeParameters} aria-label="Close parameters" title="Close parameters"><PencilIcon /></button></div></div>

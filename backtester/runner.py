@@ -19,9 +19,15 @@ def run_backtest(
         risk_free_rate: float,
         data_source: str = 'yahoo',
         ibkr_primary_exchange: str = '',
+        bar_size: str = '1 day',
 ) -> tuple[pd.DataFrame, dict[str, float | int], pd.DataFrame]:
     """ Reusable function that runs the backtest """
 
+    if bar_size == '1 min':
+        if data_source != 'ibkr':
+            raise MarketDataUnavailableError('One-minute bars require IBKR.')
+        from backtester.intraday_engine import run_intraday
+        return run_intraday(symbol, start, end, strategy, initial_cash, cost_bps, risk_free_rate, ibkr_primary_exchange)
     if data_source == 'ibkr':
         from backtester.ibkr_data import download_ibkr
         data = download_ibkr(symbol, start, end, ibkr_primary_exchange)

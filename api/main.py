@@ -4,7 +4,9 @@ import sqlite3
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 from api import history
+from api.workspace import router as workspace_router
 
 from api.schemas import BacktestRequest, BacktestResponse
 from api.strategy_factory import create_strategy
@@ -12,6 +14,20 @@ from backtester.runner import run_backtest
 from backtester.errors import MarketDataUnavailableError
 
 app = FastAPI(title="Practice Backtester")
+
+app.include_router(workspace_router)
+app.include_router(workspace_router, prefix='/api')
+
+@app.exception_handler(sqlite3.Error)
+@app.exception_handler(OSError)
+async def workspace_storage_error(request, exc):
+    return JSONResponse(status_code=503, content={'detail': 'Local storage or connection is unavailable. Changes may not have been saved; refresh to verify.'})
+
+@app.get('/market-snapshot')
+@app.get('/api/market-snapshot')
+def read_market_snapshot():
+    from api.market import market_snapshot
+    return market_snapshot()
 
 @app.post("/backtests", response_model=BacktestResponse)
 @app.post("/api/backtests", response_model=BacktestResponse)
@@ -30,6 +46,7 @@ def create_backtest(request: BacktestRequest) -> dict:
             risk_free_rate=request.risk_free_rate,
             data_source=request.data_source,
             ibkr_primary_exchange=request.ibkr_primary_exchange,
+            bar_size=request.bar_size,
         )
     except MarketDataUnavailableError as exception:
         raise HTTPException(
@@ -45,7 +62,7 @@ def create_backtest(request: BacktestRequest) -> dict:
     equity = []
     for row_number, (timestamp, row) in enumerate(result.iterrows()):
         equity.append({
-            "date": timestamp.date().isoformat(),
+            "date": timestamp.tz_convert('America/New_York').isoformat() if request.bar_size == '1 min' else timestamp.date().isoformat(),
             "strategy": float(row["Equity Curve"]),
             "benchmark": float(benchmark_equity.iloc[row_number]),
         })
@@ -53,8 +70,8 @@ def create_backtest(request: BacktestRequest) -> dict:
     trades = []
     for _, row in ledger.iterrows():
         trades.append({
-            "entry_date": row["Entry Date"].date().isoformat(),
-            "exit_date": row["Exit Date"].date().isoformat(),
+            "entry_date": row['Entry Date'].tz_convert('America/New_York').isoformat() if request.bar_size == '1 min' else row['Entry Date'].date().isoformat(),
+            "exit_date": row['Exit Date'].tz_convert('America/New_York').isoformat() if request.bar_size == '1 min' else row['Exit Date'].date().isoformat(),
             "entry_price": float(row["Entry Price"]),
             "exit_price": float(row["Exit Price"]),
             "holding_period": int(row["Holding Period"]),

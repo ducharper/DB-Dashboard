@@ -1,5 +1,7 @@
 # Backtester workspace
 
+The landing area is now a read-only Portfolio dashboard. Navigation includes Portfolio, Strategies, Research, Saved experiments and Journal. Portfolio/strategy APIs are in `api/workspace.py`; IBKR snapshot callbacks are in `backtester/ibkr_portfolio.py`. Refreshes are manual, complete snapshots are persisted to SQLite, and stale/offline viewing never implies an active connection. Position notes link account+contract IDs to manual strategy records. The existing Journal remains browser-local. See `START_HERE.md` for scope and privacy limitations.
+
 For everyday use, double-click **Start Backtester.vbs** in the repository root. It builds the frontend when needed, starts the local app, and opens the browser. Use its launcher window to stop the app. See `../START_HERE.md` for saved-run storage and backups.
 
 The commands below remain available for development:
@@ -24,6 +26,8 @@ The dashboard supports all three strategies, summary metrics, value/return/drawd
 Successful runs are saved in the local SQLite database and can be reopened from Saved runs after a refresh or restart. Open trades are excluded from the closed-trade ledger. Benchmark returns are before costs. Stopping a request stops waiting in the browser, not necessarily the Python calculation or automatic save.
 
 ## Verification
+
+The default page requests `/api/market-snapshot` for SPY, QQQ, and IWM. The server caches Yahoo Finance daily bars for five minutes (one minute after a partial failure); the browser refreshes every five minutes while visible. These are dated daily snapshots, not a real-time quote feed. No API key is required. Provider failures display an unavailable state, and failed browser refreshes retain the previous chart with a stale-data notice.
 
 Use `npm run build` and `npm run lint` for static checks.
 

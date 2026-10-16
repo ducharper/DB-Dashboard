@@ -1,4 +1,5 @@
 export type BacktestResponse = {
+    engine?: 'python'
     data_info?: { source: 'yahoo' | 'ibkr'; price_basis: string; first_date: string; last_date: string; bar_count: number; fetched_at: string; warnings: string[] } | null
     run_id?: string
     completed_at?: string

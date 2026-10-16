@@ -1,3 +1,5 @@
+
+
 /* Terminal density with editorial typography. Color belongs to the data. */
 .history-panel{margin-top:14px;padding:16px}.history-panel p{font-size:11px}.history-panel button{font-size:10px}.history-panel ul{list-style:none;margin:0;padding:0}.history-panel li{display:flex;border-top:1px solid #303030;align-items:center}.history-panel li.active-run{border-left:2px solid #9bbcf0}.history-open{text-align:left;display:grid;gap:7px;flex:1;min-width:0;border:0;background:none;padding:12px 6px}.history-open strong{font-size:12px}.history-open strong span{font-size:10px;font-weight:400;color:#aaa}.history-open>span,.history-open small{font-size:9px;color:#aaa}.history-delete{background:none;border:0;font-size:18px!important}.history-pagination{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:10px;color:#aaa}
 :root{--surface:#141414;--raised:#1b1b1b;--rule:#303030;--muted:#999994;--text:#e8e6df;--blue:#9bbcf0;--mono:'Consolas','SFMono-Regular',monospace}
@@ -467,3 +469,33 @@
 .parameter-popover .settings-panel .form-section:last-of-type{padding-top:16px}
 .parameter-popover .parameter-footer{padding-top:14px;margin-top:16px}
 @media(max-width:600px){.source-fields{grid-template-columns:1fr;gap:12px}.parameter-popover .settings-panel{padding:16px}}
+.start-main{grid-template-columns:minmax(240px,.75fr) minmax(0,1.25fr);gap:clamp(24px,5vw,80px)}
+.market-snapshot{min-width:0;width:100%;padding:26px;border:1px solid #363931;border-radius:14px;background:linear-gradient(145deg,#1b1e18,#121411);box-shadow:0 16px 60px #0002}
+.market-heading,.market-chart-heading,.market-dates{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.market-heading h2{font-size:14px;font-weight:500;letter-spacing:.02em}
+.market-heading .quiet-button{font-size:11px;background:transparent;border:0;color:#aaa99f;padding:6px 0}
+.market-instruments{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:22px 0 26px}
+.market-instruments button{display:grid;gap:7px;text-align:left;padding:12px;border:1px solid transparent;background:transparent;border-radius:8px;transition:background .18s,border-color .18s}
+.market-instruments button:hover{background:#ffffff05}
+.market-instruments button[aria-pressed=true]{background:#ffffff06;border-color:#606650}
+.market-instruments strong{font-size:11px;letter-spacing:.1em;color:#bbbdb0;font-weight:500}
+.market-instruments span{font-size:clamp(16px,1.6vw,24px);font-variant-numeric:tabular-nums;letter-spacing:-.04em}
+.market-instruments small{font-size:11px;font-variant-numeric:tabular-nums}
+.market-instruments .positive{color:#adbc94}.market-instruments .negative{color:#d3988c}
+.market-chart-heading{font-size:10px;color:#a6aa9a}.market-chart-heading span:last-child{color:#828777}
+.market-plot{height:clamp(120px,19vh,200px);margin-top:16px;position:relative}
+.market-plot svg{width:100%;height:100%;overflow:visible}
+.market-plot .grid-line{stroke:#ffffff09;stroke-width:1}
+.market-trace{fill:none;stroke:#bdcba6;stroke-width:1.6;vector-effect:non-scaling-stroke;stroke-dasharray:1;stroke-dashoffset:0;animation:market-draw 1.1s ease-out both}
+.market-area{fill:#b6c99a08;animation:market-reveal 1s ease-out both}
+.market-endpoint{fill:#d1ddbe;animation:market-breathe 3s ease-in-out infinite}
+.market-dates{font-size:9px;color:#7f8575;margin:8px 8px 0;font-variant-numeric:tabular-nums}
+.market-disclosure{font-size:10px;line-height:1.6;color:#858a7b;margin-top:22px;max-width:54em}
+.market-loading,.market-unavailable{height:100%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#9ca28f;text-align:center}
+.market-loading{animation:market-breathe 1.5s ease-in-out infinite}
+@keyframes market-draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+@keyframes market-reveal{from{opacity:0}to{opacity:1}}
+@keyframes market-breathe{0%,100%{opacity:.5}50%{opacity:1}}
+@media(max-width:900px){.start-main{padding:26px;gap:24px}.start-copy h2{font-size:38px}.market-snapshot{padding:18px}.market-instruments button{padding:10px 7px}}
+@media(max-width:780px){.start-main{grid-template-columns:1fr;gap:28px}.start-copy h2{font-size:34px}.start-copy h2 br{display:none}.start-copy h2 em:before{content:' '}.start-copy p{margin-top:10px}.market-plot{height:150px}.market-instruments{margin:16px 0}.market-disclosure{margin-top:16px}}
+@media(prefers-reduced-motion:reduce){.market-trace,.market-area,.market-endpoint,.market-loading{animation:none}.market-instruments button{transition:none}}

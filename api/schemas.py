@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Self, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -48,6 +48,7 @@ class BacktestRequest(BaseModel):
 
     symbol: str = Field(min_length=1)
     data_source: Literal['yahoo', 'ibkr'] = 'yahoo'
+    bar_size: Literal['1 day', '1 min'] = '1 day'
     ibkr_primary_exchange: str = Field(default='', max_length=30, pattern=r'^[A-Za-z0-9.]*$')
     start: date
     end: date
@@ -65,17 +66,25 @@ class BacktestRequest(BaseModel):
     def validate_dates(self) -> Self:
         if self.start >= self.end:
             raise ValueError("Start date must be before end")
+        if self.bar_size == '1 min':
+            if self.data_source != 'ibkr':
+                raise ValueError('One-minute bars require IBKR.')
+            if (self.end - self.start).days > 31:
+                raise ValueError('Minute downloads are limited to 31 calendar days per run.')
+            if self.cost_bps >= 10000:
+                raise ValueError('Trading cost must be below 10000 bps.')
+            self.periods_per_year = 252  # Intraday returns are aggregated by session.
 
         return self
 
 class EquityPoint(BaseModel):
-    date: date
+    date: date | datetime
     strategy: float
     benchmark: float
 
 class TradeResponse(BaseModel):
-    entry_date: date
-    exit_date: date
+    entry_date: date | datetime
+    exit_date: date | datetime
     entry_price: float
     exit_price: float
     holding_period: int
@@ -92,6 +101,7 @@ class DataInfo(BaseModel):
 
 
 class BacktestResponse(BaseModel):
+    engine: Literal['python'] = 'python'
     data_info: DataInfo | None = None
     run_id: str | None = None
     completed_at: str | None = None

@@ -6,7 +6,21 @@ The app runs only on this computer at http://127.0.0.1:8765. No hosting account 
 
 Prerequisites: the project's `.venv` with its existing Python dependencies, Node.js, and installed frontend dependencies. If dependencies are missing, run `npm install` inside `frontend` once. The launcher never installs software automatically. Startup failures are reported in its window; details are in `data/launcher.log`.
 
-## Saved results
+## Trading workspace: first milestone
+
+The app now opens on **Portfolio**. Open paper TWS on port **7497**, keep **Read-Only API** enabled, then click **Refresh from TWS**. The portfolio reader uses client ID **51**, independently of historical-price downloads. It reads accessible accounts (up to 10), account values and positions, waits for completed downloads, saves a snapshot, and disconnects. No orders are submitted or changed.
+
+This is manual snapshot refresh, not a live stream. A saved snapshot is always labeled with its capture time; failed refreshes leave it unchanged. Prices may be delayed. Paper identification uses the IBKR DU account prefix; other accounts are labeled live/unverified rather than assumed paper. Currency values are kept separate. P&L is TWS-reported, not a cash-flow-adjusted return or a strategy-attribution calculation.
+
+Use **Strategies** to create/edit named strategy records, version labels, status, rules, parameters and risk plans. These are research records, not executable strategies; a “live” status does not activate trading. Version labels are manual, and editing updates the record rather than creating immutable version history. Use a position's **Add note / Edit note** button to attach a strategy, thesis and invalidation/review plan. Notes are keyed by account plus contract ID, and persist across refreshes, restarts, and closing/reopening the same instrument. A position can have one manual strategy label; multi-strategy allocation is not implemented.
+
+Account snapshots, strategy records and position notes are stored in the existing local SQLite database. It now contains sensitive account data: keep backups private, do not commit it, and do not expose this unauthenticated app beyond localhost. No account data is uploaded. Strategy/position editors require explicit Save; switching workspace tabs retains unsaved edits, but reloading the browser discards them. The older **Journal** remains browser-local and is not migrated or included in the SQLite backup.
+
+**Research**, **Saved experiments**, and **Journal** preserve the previous tools. New Python backtests record their engine. Existing NinjaTrader research source is unchanged; NinjaTrader results importing, risk alerts, strategy attribution, historical return analytics, and order execution are not part of this milestone. A real NinjaTrader trade export is needed before building its importer.
+
+Verification: backend tests use temporary databases and simulated account callbacks. Run `python -m unittest discover -s tests` in the project environment. Browser checks used an isolated demonstration database. The first live portfolio verification could not connect to TWS (502), so refresh against your logged-in paper session to verify actual account values.
+
+## Backtest results
 
 Every successful API backtest automatically saves its request settings, summary, equity observations and completed trades in **data/backtests.sqlite3**. Use **Saved runs** to reopen one after restarting or refreshing. Opening a run restores the form settings too. Reopening does not contact the market-data provider.
 
@@ -27,6 +41,26 @@ IBKR TRADES prices adjust for splits but **exclude dividends**; Yahoo adjusts fo
 Restart the launcher after updating. Old saved runs remain readable and default to Yahoo when reopened. Saved results work without TWS; new calculations do not use cached prices.
 
 ## Development
+
+### One-minute research data
+
+`download_intraday.py` retrieves one completed US stock/ETF session from paper TWS as one-minute OHLCV bars. Keep TWS logged in on port 7497 with Read-Only API enabled. It uses client ID 50 and sends no orders.
+
+```powershell
+.\.venv\Scripts\python.exe download_intraday.py --symbol AAPL --date 2026-10-05 --exchange NASDAQ
+```
+
+Choose a completed trading date before today. Each successful download creates a new folder under `data/intraday/` with `bars.csv` and `metadata.json`. CSV timestamps mark the **start** of the minute and include UTC and America/New_York offsets. Metadata records the request, source, coverage and warnings. Prices are split-adjusted TRADES and exclude dividends. Availability depends on IBKR permissions and history.
+
+Missing minutes are never filled. Coverage other than the normal 390 regular-session minutes produces a warning; early closes, halts and missing data require review. Errors and timeouts do not export partial downloads. This downloader has no automatic retries or bulk scheduling.
+
+The dashboard now supports **Bar size → 1 minute** with IBKR. Choose completed sessions, with an exclusive end date and at most 31 calendar days. It downloads each weekday in sequence; holidays, early closes and incomplete sessions stop the run rather than silently skipping data. Old saved runs remain daily. Restart the launcher after updating.
+
+Intraday signals restart each session and windows count bars (minutes). Signals calculated from a completed bar fill at the next bar's open. Positions liquidate at 15:59 open, so no overnight exposure is carried. Costs apply to each buy and sell; the model uses fractional shares with no leverage. These are estimated fills without observed spreads or liquidity constraints. Charts mark bars by their start time while valuing the portfolio at the bar close; trade timestamps are actual simulated fill times. All dashboard intraday times use New York time.
+
+Annualized return, volatility, Sharpe and Sortino use compounded daily returns and 252 sessions/year; they are withheld for fewer than 20 sessions. Twenty sessions is only a display minimum, not evidence of a reliable strategy. Buy-and-hold starts at the first session open and includes overnight returns. Saved runs retain minute timestamps and interval settings.
+
+Minute OHLCV does not contain bid/ask spreads, auction imbalances, or within-minute volume timing. Testing the first-second volume claim requires finer data.
 
 ### Optional IBKR connection check
 

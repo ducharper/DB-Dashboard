@@ -8,6 +8,7 @@ export default function BacktestForm({ disabled = false, initialRequest: r, onRe
   const [error, setError] = useState('')
   const [source, setSource] = useState<'yahoo' | 'ibkr'>(r ? r.data_source ?? 'yahoo' : 'ibkr')
   const [exchange, setExchange] = useState(r?.ibkr_primary_exchange ?? '')
+  const [barSize, setBarSize] = useState<'1 day' | '1 min'>(r?.bar_size ?? '1 day')
   const [loading, setLoading] = useState(false)
   const controller = useRef<AbortController | null>(null)
   useEffect(() => () => controller.current?.abort(), [])
@@ -35,6 +36,12 @@ export default function BacktestForm({ disabled = false, initialRequest: r, onRe
     if (![fields.cash, fields.costs, fields.riskFree].every(v => v.trim() !== '' && Number.isFinite(+v)) || +fields.cash <= 0 || +fields.costs < 0 || +fields.riskFree <= -100 || !integer(fields.periods)) { setError('Check capital, costs, annualization, and risk-free rate.'); return }
     const request: BacktestRequest = { symbol: fields.symbol.trim().toUpperCase(), start: fields.start, end: fields.end, strategy, initial_cash: +fields.cash, cost_bps: +fields.costs, periods_per_year: +fields.periods, risk_free_rate: +fields.riskFree / 100 }
     request.data_source = source
+    request.bar_size = barSize
+    if (barSize === '1 min') {
+      if (source !== 'ibkr') { setError('One-minute bars require Interactive Brokers.'); return }
+      if ((Date.parse(fields.end) - Date.parse(fields.start)) / 86400000 > 31) { setError('Select at most 31 calendar days for minute bars.'); return }
+      request.periods_per_year = 252
+    }
     request.ibkr_primary_exchange = source === 'ibkr' ? exchange.trim().toUpperCase() : ''
     const abort = new AbortController()
     controller.current = abort
@@ -58,19 +65,21 @@ export default function BacktestForm({ disabled = false, initialRequest: r, onRe
       </div>
       <section className="form-section" aria-labelledby="market-heading"><h3 id="market-heading">Market & dates</h3><label>Symbol<input required maxLength={30} value={fields.symbol} onChange={e => update('symbol', e.target.value)} autoCapitalize="characters" spellCheck={false} /></label>
       <div className="field-pair"><label>Start date<input type="date" required value={fields.start} onChange={e => update('start', e.target.value)} /></label><label>End date<input type="date" required value={fields.end} onChange={e => update('end', e.target.value)} /></label></div>
-      <p className="field-help">Daily prices · end date is exclusive</p>
+      <label>Bar size<select value={barSize} onChange={e => { setBarSize(e.target.value as '1 day' | '1 min'); setError(''); onEdit() }}><option value="1 day">Daily</option><option value="1 min" disabled={source !== 'ibkr'}>1 minute · IBKR</option></select></label>
+      <p className="field-help">End date is exclusive. {barSize === '1 min' ? 'Completed sessions only · maximum 31 calendar days · times shown in New York time. Holidays, early closes and incomplete sessions stop the run.' : 'Daily prices.'}</p>
       </section><section className="form-section" aria-labelledby="strategy-heading"><h3 id="strategy-heading">Strategy</h3><label>Strategy<select value={fields.strategy} onChange={e => update('strategy', e.target.value)}><option value="moving_average">Moving average crossover</option><option value="momentum">Momentum</option><option value="mean_reversion">Mean reversion</option></select></label>
       <div className="parameter-box">
-        {fields.strategy === 'moving_average' ? <><p>Invest when the short average is above the long average.</p><div className="field-pair">{numeric('short', 'Short window · days', 1)}{numeric('long', 'Long window · days', 1)}</div></> : fields.strategy === 'momentum' ? <><p>Invest when price exceeds its value one lookback ago.</p>{numeric('lookback', 'Lookback · trading periods', 1)}</> : <><p>Buy below the rolling mean; exit as price recovers toward it.</p>{numeric('mean', 'Mean window · trading periods', 1)}<div className="field-pair">{numeric('entry', 'Entry distance %', 0, 'any')}{numeric('exit', 'Exit distance %', 0, 'any')}</div></>}
+        {fields.strategy === 'moving_average' ? <><p>Invest when the short average is above the long average.</p><div className="field-pair">{numeric('short', 'Short window · bars', 1)}{numeric('long', 'Long window · bars', 1)}</div></> : fields.strategy === 'momentum' ? <><p>Invest when price exceeds its value one lookback ago.</p>{numeric('lookback', 'Lookback · trading periods', 1)}</> : <><p>Buy below the rolling mean; exit as price recovers toward it.</p>{numeric('mean', 'Mean window · trading periods', 1)}<div className="field-pair">{numeric('entry', 'Entry distance %', 0, 'any')}{numeric('exit', 'Exit distance %', 0, 'any')}</div></>}
       </div>
       </section><section className="form-section" aria-labelledby="capital-heading"><h3 id="capital-heading">Capital & costs</h3><div className="field-pair">{numeric('cash', 'Initial capital · USD', 0.01, 'any')}{numeric('costs', 'Cost · basis points', 0, 'any')}</div>
       <p className="field-help">5 bps = 0.05% per unit of turnover.</p>
-      <div className="annualization-fields"><div className="field-pair">{numeric('periods', 'Periods / year', 1)}{numeric('riskFree', 'Risk-free rate %', -99.99, 'any')}</div></div></section>
+      <div className="annualization-fields"><div className="field-pair">{barSize === '1 min' ? <p>Risk metrics use daily compounded returns and 252 sessions/year. Annualized metrics require at least 20 sessions.</p> : numeric('periods', 'Periods / year', 1)}{numeric('riskFree', 'Risk-free rate %', -99.99, 'any')}</div></div></section>
 
     </fieldset>
     {loading && <button type="button" className="quiet-button" onClick={() => controller.current?.abort()}>Stop waiting</button>}
     <div role="status" className="form-status">{loading ? 'Downloading prices and calculating performance…' : ''}</div>
     {error && <p role="alert" className="error-message">{error}</p>}
-    <div className="parameter-footer"><details className="assumptions"><summary>Simulation assumptions</summary><p>Long or flat · one-period signal delay · close-to-close returns. Strategy costs included; buy-and-hold shown before costs.</p></details><button className="primary-button" type="submit" disabled={loading || disabled}>{loading ? 'Running experiment…' : 'Run backtest'} <span aria-hidden="true">↗</span></button></div>
+    <div className="parameter-footer"><details className="assumptions"><summary>Simulation assumptions</summary><p>{barSize === '1 min' ? 'Long or flat · completed-bar signals fill at the next minute open · liquidate at 15:59 open · indicators restart each session. Windows count minutes. Fills are estimates; costs apply to buys and sells.' : 'Long or flat · one-period signal delay · close-to-close returns.'} Strategy costs included; buy-and-hold shown before costs and includes overnight exposure.</p></details><button className="primary-button" type="submit" disabled={loading || disabled}>{loading ? 'Running experiment…' : 'Run backtest'} <span aria-hidden="true">↗</span></button></div>
   </form>
 }
+

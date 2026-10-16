@@ -27,6 +27,8 @@ Successful runs are saved in the local SQLite database and can be reopened from 
 
 ## Verification
 
+Read [DESIGN_GUIDELINES.md](DESIGN_GUIDELINES.md) before frontend design changes; it records the user's chosen design reference and its application to this workspace.
+
 The default page requests `/api/market-snapshot` for SPY, QQQ, and IWM. The server caches Yahoo Finance daily bars for five minutes (one minute after a partial failure); the browser refreshes every five minutes while visible. These are dated daily snapshots, not a real-time quote feed. No API key is required. Provider failures display an unavailable state, and failed browser refreshes retain the previous chart with a stale-data notice.
 
 Use `npm run build` and `npm run lint` for static checks.

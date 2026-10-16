@@ -4,7 +4,7 @@ import { JournalIcon, PencilIcon } from './components/WorkspaceIcons'
 import PortfolioDashboard from './components/PortfolioDashboard'
 import StrategyLibrary from './components/StrategyLibrary'
 import StartScreen from './components/StartScreen'
-import ChromeLogo from './components/ChromeLogo'
+import WorkspaceLauncher from './components/WorkspaceLauncher'
 import BacktestForm from './components/BacktestForm'
 import PerformanceChart from './components/PerformanceChart'
 import TradeTable from './components/TradeTable'
@@ -82,16 +82,16 @@ export default function App() {
   const [formRequest, setFormRequest] = useState<CompletedRun['request']>()
   const [tab, setTab] = useState<'overview' | 'trades' | 'details'>('overview')
   const [workspaceTab, setWorkspaceTab] = useState<'portfolio' | 'strategies' | 'backtest' | 'saved' | 'journal'>('portfolio')
-  const workspaceLabels = { portfolio: 'Portfolio', strategies: 'Strategies', backtest: 'Research', saved: 'Saved experiments', journal: 'Journal' }
   const primaryMetrics = ['Total Return', 'Benchmark Return', 'Sharpe Ratio', 'Max Drawdown']
   function receive(completed: CompletedRun) { setRun(completed); setWorkspaceTab('backtest'); closeParameters(); setDirty(false); setHistoryRevision(n => n + 1) }
   function openSaved(saved: CompletedRun) { setRun(saved); setFormRequest(saved.request); setFormRevision(n => n + 1); setDirty(false); setWorkspaceTab('backtest') }
   return <div className="app-shell">
-    <header className="topbar"><a href="#main-content" className="skip-link">Skip to results</a><ChromeLogo /><div className="header-controls">
-      <span className="local-badge">LOCAL WORKSPACE · READ ONLY</span>
-      <button ref={editButton} className="edit-parameters parameter-orb" aria-label="Edit parameters" data-tooltip="Edit parameters" aria-haspopup="dialog" aria-expanded={editing} onClick={openParameters}><PencilIcon /></button></div></header>
-    <main className="workspace">
-      <nav className="dashboard-workspace-nav" aria-label="Workspace">{(['portfolio', 'strategies', 'backtest', 'saved', 'journal'] as const).map(name => <button key={name} id={`workspace-${name}-tab`} aria-current={workspaceTab === name ? 'page' : undefined} onClick={() => setWorkspaceTab(name)}>{workspaceLabels[name]}</button>)}</nav>
+    <a href="#workspace-content" className="skip-link">Skip to content</a>
+    <div className="workspace-tools">
+      <WorkspaceLauncher selected={workspaceTab} onSelect={setWorkspaceTab} />
+      <button ref={editButton} className="edit-parameters parameter-orb" aria-label="Edit parameters" data-tooltip="Edit parameters" aria-haspopup="dialog" aria-expanded={editing} onClick={openParameters}><PencilIcon /></button>
+    </div>
+    <main id="workspace-content" tabIndex={-1} className="workspace">
       <div className="dashboard-panel" hidden={workspaceTab !== 'portfolio'}><PortfolioDashboard active={workspaceTab === 'portfolio'} /></div>
       <div className="dashboard-panel" hidden={workspaceTab !== 'strategies'}><StrategyLibrary /></div>
       <div id="workspace-journal-panel" role="tabpanel" aria-labelledby="workspace-journal-tab" hidden={workspaceTab !== 'journal'}><Journal /></div>

@@ -7,13 +7,13 @@ class MeanReversionStrategy(Strategy):
         """ Initializes the mean reversion strategy with given values. """
 
         if mean_window <= 0:
-            raise ValueError("Mean window must be positive")
+            raise ValueError("Mean window must be positive.")
 
         if not 0 < entry_distance < 1:
-            raise ValueError("Entry distance must be between 0 and 1")
+            raise ValueError("Entry distance must be between 0 and 1.")
 
         if not 0 <= exit_distance < entry_distance:
-            raise ValueError("Exit distance must be nonnegative and less than entry distance")
+            raise ValueError("Exit distance must be nonnegative and less than entry distance.")
 
         self.mean_window = mean_window
         self.entry_distance = entry_distance

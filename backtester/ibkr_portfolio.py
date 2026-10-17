@@ -1,4 +1,3 @@
-
 from math import isfinite
 from threading import Event, Lock, Thread
 from backtester.errors import MarketDataUnavailableError

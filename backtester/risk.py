@@ -7,7 +7,7 @@ def stock_exposure(quantity: float, price: float) -> float:
         raise ValueError("Quantity must be finite.")
     if not math.isfinite(price):
         raise ValueError("Price must be finite.")
-    if price < 0:
+    if price <= 0:
         raise ValueError("Price must be positive.")
 
     return quantity * price
@@ -29,10 +29,6 @@ def stock_scenario_pnl(
         price_change: float,
 ) -> float:
     """Return hypothetical P&L from a proportional price move."""
-    if not math.isfinite(quantity):
-        raise ValueError("Quantity must be finite.")
-    if price < 0:
-        raise ValueError("Price must be positive.")
     if not math.isfinite(price_change):
         raise ValueError("Price change must be finite.")
     if price_change < -1:
@@ -47,17 +43,6 @@ def summarize_stock_position(
         price_change: float,
 ) -> dict[str, float]:
     """Return summary statistics for a position."""
-    if not math.isfinite(quantity):
-        raise ValueError("Quantity must be finite.")
-    if price < 0:
-        raise ValueError("Price must be positive.")
-    if not math.isfinite(price_change):
-        raise ValueError("Price change must be finite.")
-    if not math.isfinite(account_equity):
-        raise ValueError("Account equity must be finite.")
-    if price_change < -1:
-        raise ValueError("Price change must be greater than or equal to -1; price cannot decrease by more than 100%.")
-
     exposure = stock_exposure(quantity, price)
     ratio = exposure_ratio(exposure, account_equity)
     pnl = stock_scenario_pnl(quantity, price, price_change)

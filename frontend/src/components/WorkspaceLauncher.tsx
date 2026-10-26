@@ -4,7 +4,7 @@ import ChromeLogo from './ChromeLogo'
 
 const destinations = [
   ['portfolio', 'Portfolio'], ['strategies', 'Strategies'], ['backtest', 'Research'],
-  ['saved', 'Saved experiments'], ['journal', 'Journal'],
+  ['kalshi', 'Kalshi'], ['saved', 'Saved experiments'], ['journal', 'Journal'],
 ] as const
 type Destination = typeof destinations[number][0]
 
@@ -38,7 +38,7 @@ export default function WorkspaceLauncher({ selected, onSelect }: { selected: De
       const index = buttons.indexOf(document.activeElement as HTMLButtonElement)
       if (['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
         event.preventDefault()
-        focusOption(event.key === 'Home' ? 0 : event.key === 'End' ? 4 : (index + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : 4)) % 5)
+        focusOption(event.key === 'Home' ? 0 : event.key === 'End' ? destinations.length - 1 : (index + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : destinations.length - 1)) % destinations.length)
       }
     }}>
       {destinations.map(([name, label], index) => <button key={name} id={`workspace-${name}-tab`} style={{ '--item': index } as CSSProperties} aria-current={selected === name ? 'page' : undefined} onClick={() => {

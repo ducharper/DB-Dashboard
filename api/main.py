@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from api import history
 from api.workspace import router as workspace_router
+from api.kalshi import router as kalshi_router
 
 from api.schemas import BacktestRequest, BacktestResponse
 from api.strategy_factory import create_strategy
@@ -17,6 +18,8 @@ app = FastAPI(title="Practice Backtester")
 
 app.include_router(workspace_router)
 app.include_router(workspace_router, prefix='/api')
+app.include_router(kalshi_router)
+app.include_router(kalshi_router, prefix='/api')
 
 @app.exception_handler(sqlite3.Error)
 @app.exception_handler(OSError)

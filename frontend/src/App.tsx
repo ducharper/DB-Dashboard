@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import KalshiDashboard from './components/KalshiDashboard'
 import Journal, { JournalReference } from './components/Journal'
 import { JournalIcon, PencilIcon } from './components/WorkspaceIcons'
 import PortfolioDashboard from './components/PortfolioDashboard'
@@ -81,7 +82,7 @@ export default function App() {
   const [formRevision, setFormRevision] = useState(0)
   const [formRequest, setFormRequest] = useState<CompletedRun['request']>()
   const [tab, setTab] = useState<'overview' | 'trades' | 'details'>('overview')
-  const [workspaceTab, setWorkspaceTab] = useState<'portfolio' | 'strategies' | 'backtest' | 'saved' | 'journal'>('portfolio')
+  const [workspaceTab, setWorkspaceTab] = useState<'portfolio' | 'strategies' | 'backtest' | 'saved' | 'journal' | 'kalshi'>('portfolio')
   const primaryMetrics = ['Total Return', 'Benchmark Return', 'Sharpe Ratio', 'Max Drawdown']
   function receive(completed: CompletedRun) { setRun(completed); setWorkspaceTab('backtest'); closeParameters(); setDirty(false); setHistoryRevision(n => n + 1) }
   function openSaved(saved: CompletedRun) { setRun(saved); setFormRequest(saved.request); setFormRevision(n => n + 1); setDirty(false); setWorkspaceTab('backtest') }
@@ -93,7 +94,7 @@ export default function App() {
     </div>
     <main id="workspace-content" tabIndex={-1} className="workspace">
       <div className="dashboard-panel" hidden={workspaceTab !== 'portfolio'}><PortfolioDashboard active={workspaceTab === 'portfolio'} /></div>
-      <div className="dashboard-panel" hidden={workspaceTab !== 'strategies'}><StrategyLibrary /></div>
+      <div className="dashboard-panel" hidden={workspaceTab !== 'kalshi'}>{workspaceTab === 'kalshi' && <KalshiDashboard active />}</div><div className="dashboard-panel" hidden={workspaceTab !== 'strategies'}><StrategyLibrary /></div>
       <div id="workspace-journal-panel" role="tabpanel" aria-labelledby="workspace-journal-tab" hidden={workspaceTab !== 'journal'}><Journal /></div>
       <div id="workspace-saved-panel" role="tabpanel" aria-labelledby="workspace-saved-tab" hidden={workspaceTab !== 'saved'}>
         {workspaceTab === 'saved' && <RunHistory key={`history-${historyRevision}`} revision={historyRevision} busy={running} activeId={run?.id} onWorking={setHistoryWorking} onOpen={openSaved} onDelete={id => { if (run?.id === id) setRun(null) }} />}

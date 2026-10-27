@@ -4,8 +4,8 @@ from unittest.mock import patch
 import pandas as pd
 from fastapi.testclient import TestClient
 
-from api import market
-from api.main import app
+from dashboard.api import market
+from dashboard.api.main import app
 
 
 class MarketSnapshotTests(unittest.TestCase):
@@ -17,7 +17,7 @@ class MarketSnapshotTests(unittest.TestCase):
         market._cached = None
         market._expires = 0
 
-    @patch('api.market.yf.download')
+    @patch('dashboard.api.market.yf.download')
     def test_prices_dates_changes_and_cache(self, download):
         download.return_value = pd.DataFrame({'Close': [100, float('nan'), 105]},
                                             index=pd.date_range('2026-09-01', periods=3))
@@ -32,7 +32,7 @@ class MarketSnapshotTests(unittest.TestCase):
         self.assertEqual(client.get('/market-snapshot').json(), response.json())
         self.assertEqual(download.call_count, 3)
 
-    @patch('api.market.yf.download')
+    @patch('dashboard.api.market.yf.download')
     def test_provider_failure_is_explicit_and_other_symbols_survive(self, download):
         frame = pd.DataFrame({'Close': [100, 99]}, index=pd.date_range('2026-09-01', periods=2))
         download.side_effect = [RuntimeError('offline'), frame, frame]

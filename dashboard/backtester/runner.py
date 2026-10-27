@@ -2,11 +2,11 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, timezone
 
-from backtester.engine import BackTestEngine
-from backtester.report import summarize_backtest
-from backtester.trades import build_trade_ledger
-from backtester.errors import MarketDataUnavailableError
-from strategies.base import Strategy
+from dashboard.backtester.engine import BackTestEngine
+from dashboard.backtester.report import summarize_backtest
+from dashboard.backtester.trades import build_trade_ledger
+from dashboard.backtester.errors import MarketDataUnavailableError
+from dashboard.strategies.base import Strategy
 
 def run_backtest(
         symbol: str,
@@ -26,10 +26,10 @@ def run_backtest(
     if bar_size == '1 min':
         if data_source != 'ibkr':
             raise MarketDataUnavailableError('One-minute bars require IBKR.')
-        from backtester.intraday_engine import run_intraday
+        from dashboard.backtester.intraday_engine import run_intraday
         return run_intraday(symbol, start, end, strategy, initial_cash, cost_bps, risk_free_rate, ibkr_primary_exchange)
     if data_source == 'ibkr':
-        from backtester.ibkr_data import download_ibkr
+        from dashboard.backtester.ibkr_data import download_ibkr
         data = download_ibkr(symbol, start, end, ibkr_primary_exchange)
     elif data_source == 'yahoo':
         data = yf.download(symbol, start=start, end=end, multi_level_index=False, auto_adjust=True)

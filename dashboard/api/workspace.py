@@ -7,8 +7,8 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
-from api.history import connect
-from backtester.errors import MarketDataUnavailableError
+from dashboard.api.history import connect
+from dashboard.backtester.errors import MarketDataUnavailableError
 
 router = APIRouter()
 
@@ -85,7 +85,7 @@ def portfolio():
 
 @router.post('/portfolio/refresh')
 def refresh_portfolio():
-    from backtester.ibkr_portfolio import fetch_portfolio
+    from dashboard.backtester.ibkr_portfolio import fetch_portfolio
     try:
         snapshot = fetch_portfolio()
     except MarketDataUnavailableError as exc:

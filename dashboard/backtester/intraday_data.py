@@ -5,8 +5,8 @@ from threading import Event, Thread
 
 import pandas as pd
 
-from backtester.errors import MarketDataUnavailableError
-from backtester.ibkr_data import _connection_lock
+from dashboard.backtester.errors import MarketDataUnavailableError
+from dashboard.backtester.ibkr_data import _connection_lock
 
 
 def normalize_minutes(bars, session: date) -> pd.DataFrame:

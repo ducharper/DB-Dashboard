@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 import pandas as pd
 
-from backtester.errors import MarketDataUnavailableError
-from backtester.intraday_data import download_minutes, normalize_minutes
+from dashboard.backtester.errors import MarketDataUnavailableError
+from dashboard.backtester.intraday_data import download_minutes, normalize_minutes
 
 
 def bar(stamp, close=101):

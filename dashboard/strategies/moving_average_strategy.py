@@ -1,6 +1,6 @@
 import pandas as pd
 
-from strategies.base import Strategy
+from dashboard.strategies.base import Strategy
 
 class MovingAverageStrategy(Strategy):
     def __init__(self, short_window: int, long_window: int):

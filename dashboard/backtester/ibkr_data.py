@@ -8,7 +8,7 @@ import math
 
 import pandas as pd
 
-from backtester.errors import MarketDataUnavailableError
+from dashboard.backtester.errors import MarketDataUnavailableError
 
 _connection_lock = Lock()
 

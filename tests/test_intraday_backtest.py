@@ -4,9 +4,9 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import test_saved_runs
-from backtester.intraday_data import normalize_minutes
-from backtester.intraday_engine import simulate_minutes, run_intraday
-from backtester.errors import MarketDataUnavailableError
+from dashboard.backtester.intraday_data import normalize_minutes
+from dashboard.backtester.intraday_engine import simulate_minutes, run_intraday
+from dashboard.backtester.errors import MarketDataUnavailableError
 
 
 class Signals:
@@ -42,7 +42,7 @@ class IntradayApiTests(test_saved_runs.SavedRunsTests):
     def test_minute_save_reopen_and_daily_annualization(self):
         request = {**self.request, 'start': '2024-07-08', 'end': '2024-07-09',
                    'data_source': 'ibkr', 'bar_size': '1 min', 'periods_per_year': 98280}
-        with patch('backtester.intraday_engine.download_minutes', return_value=self.minute_frame()):
+        with patch('dashboard.backtester.intraday_engine.download_minutes', return_value=self.minute_frame()):
             response = self.client.post('/api/backtests', json=request)
         self.assertEqual(response.status_code, 200, response.text)
         result = response.json()
@@ -55,7 +55,7 @@ class IntradayApiTests(test_saved_runs.SavedRunsTests):
         self.assertEqual(saved['result']['equity'], result['equity'])
 
     def test_reject_incomplete_session_and_invalid_provider(self):
-        with patch('backtester.intraday_engine.download_minutes', return_value=self.minute_frame().iloc[:-1]):
+        with patch('dashboard.backtester.intraday_engine.download_minutes', return_value=self.minute_frame().iloc[:-1]):
             with self.assertRaises(MarketDataUnavailableError):
                 run_intraday('AAPL', '2024-07-08', '2024-07-09', Signals(), 1000, 5, .04)
         response = self.client.post('/api/backtests', json={**self.request, 'bar_size': '1 min'})

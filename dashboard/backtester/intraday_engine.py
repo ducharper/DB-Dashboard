@@ -2,9 +2,9 @@
 from datetime import date, timedelta
 import pandas as pd
 
-from backtester.errors import MarketDataUnavailableError
-from backtester.intraday_data import download_minutes
-from backtester.report import summarize_backtest
+from dashboard.backtester.errors import MarketDataUnavailableError
+from dashboard.backtester.intraday_data import download_minutes
+from dashboard.backtester.report import summarize_backtest
 
 
 def run_intraday(symbol, start, end, strategy, initial_cash, cost_bps, risk_free_rate, primary_exchange=''):

@@ -4,8 +4,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from backtester.ibkr_data import normalize_bars, download_ibkr
-from backtester.errors import MarketDataUnavailableError
+from dashboard.backtester.ibkr_data import normalize_bars, download_ibkr
+from dashboard.backtester.errors import MarketDataUnavailableError
 import test_saved_runs
 
 
@@ -68,7 +68,7 @@ class BarsTests(unittest.TestCase):
 class ProviderApiTests(test_saved_runs.SavedRunsTests):
     def test_ibkr_source_and_metadata_saved(self):
         self.prices.attrs['data_info'] = dict(source='ibkr', price_basis='Split-adjusted TRADES; dividends excluded', first_date='2024-01-01', last_date='2024-07-26', bar_count=150, fetched_at='2026-10-06T00:00:00+00:00', warnings=['Delayed data'])
-        with patch('backtester.ibkr_data.download_ibkr', return_value=self.prices) as ibkr, patch('backtester.runner.yf.download', side_effect=AssertionError('No fallback')):
+        with patch('dashboard.backtester.ibkr_data.download_ibkr', return_value=self.prices) as ibkr, patch('dashboard.backtester.runner.yf.download', side_effect=AssertionError('No fallback')):
             response = self.client.post('/api/backtests', json={**self.request, 'data_source': 'ibkr', 'ibkr_primary_exchange': 'NASDAQ'})
         self.assertEqual(response.status_code, 200, response.text)
         ibkr.assert_called_once_with('TEST', '2024-01-01', '2026-01-01', 'NASDAQ')
@@ -77,7 +77,7 @@ class ProviderApiTests(test_saved_runs.SavedRunsTests):
         self.assertEqual(saved['result']['data_info']['warnings'], ['Delayed data'])
 
     def test_failure_never_falls_back_or_saves(self):
-        with patch('backtester.ibkr_data.download_ibkr', side_effect=MarketDataUnavailableError('TWS unavailable')), patch('backtester.runner.yf.download', side_effect=AssertionError('No fallback')):
+        with patch('dashboard.backtester.ibkr_data.download_ibkr', side_effect=MarketDataUnavailableError('TWS unavailable')), patch('dashboard.backtester.runner.yf.download', side_effect=AssertionError('No fallback')):
             response = self.client.post('/api/backtests', json={**self.request, 'data_source': 'ibkr'})
         self.assertEqual(response.status_code, 502)
         self.assertEqual(self.client.get('/api/runs').json(), [])

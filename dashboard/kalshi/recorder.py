@@ -12,7 +12,7 @@ from threading import Event, Lock, Thread
 import time
 from uuid import uuid4
 
-ROOT = Path(__file__).resolve().parents[1]
+from dashboard.paths import PROJECT_ROOT as ROOT
 WS_URL = 'wss://external-api-ws.kalshi.com/trade-api/ws/v2'
 
 
@@ -147,7 +147,7 @@ class Recorder:
 
     def run(self, session, key, minutes):
         from websockets.sync.client import connect as ws_connect
-        from api.kalshi import fetch_public
+        from dashboard.api.kalshi import fetch_public
         deadline = time.monotonic() + minutes*60
         retries = 0
         try:

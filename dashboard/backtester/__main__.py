@@ -1,7 +1,7 @@
-from backtester.plotting import plot_backtest
-from backtester.report import format_summary
-from backtester.runner import run_backtest
-from strategies.moving_average_strategy import MovingAverageStrategy
+from dashboard.backtester.plotting import plot_backtest
+from dashboard.backtester.report import format_summary
+from dashboard.backtester.runner import run_backtest
+from dashboard.strategies.moving_average_strategy import MovingAverageStrategy
 
 def main() -> None:
     result, summary, ledger = run_backtest(

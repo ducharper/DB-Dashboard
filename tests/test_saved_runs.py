@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 from fastapi.testclient import TestClient
 
-from api.main import app
-from api import history
+from dashboard.api.main import app
+from dashboard.api import history
 
 
 class SavedRunsTests(unittest.TestCase):
@@ -28,7 +28,7 @@ class SavedRunsTests(unittest.TestCase):
         self.temp.cleanup()
 
     def run_backtest(self):
-        with patch('backtester.runner.yf.download', return_value=self.prices):
+        with patch('dashboard.backtester.runner.yf.download', return_value=self.prices):
             response = self.client.post('/api/backtests', json=self.request)
         self.assertEqual(response.status_code, 200, response.text)
         return response.json()
@@ -37,7 +37,7 @@ class SavedRunsTests(unittest.TestCase):
         result = self.run_backtest()
         run_id = result['run_id']
         # New client and new database connections: no in-memory persistence dependency.
-        with TestClient(app) as restarted, patch('backtester.runner.yf.download', side_effect=AssertionError('Reopening must not download')):
+        with TestClient(app) as restarted, patch('dashboard.backtester.runner.yf.download', side_effect=AssertionError('Reopening must not download')):
             listing = restarted.get('/api/runs').json()
             self.assertEqual(listing[0]['id'], run_id)
             saved = restarted.get('/api/runs/' + run_id).json()
@@ -52,7 +52,7 @@ class SavedRunsTests(unittest.TestCase):
             self.assertEqual(db.execute('SELECT deleted FROM runs WHERE id=?', (run_id,)).fetchone()[0], 1)
 
     def test_failed_requests_are_not_saved(self):
-        with patch('backtester.runner.yf.download', return_value=pd.DataFrame()):
+        with patch('dashboard.backtester.runner.yf.download', return_value=pd.DataFrame()):
             self.assertEqual(self.client.post('/api/backtests', json=self.request).status_code, 502)
         self.assertEqual(self.client.post('/api/backtests', json={**self.request, 'initial_cash': -1}).status_code, 422)
         self.assertEqual(self.client.get('/api/runs').json(), [])
@@ -67,7 +67,7 @@ class SavedRunsTests(unittest.TestCase):
         self.assertEqual(self.client.get('/runs?limit=101').status_code, 422)
 
     def test_storage_failure_is_explicit(self):
-        with patch('backtester.runner.yf.download', return_value=self.prices), patch('api.history.save_run', side_effect=sqlite3.OperationalError('disk full')):
+        with patch('dashboard.backtester.runner.yf.download', return_value=self.prices), patch('dashboard.api.history.save_run', side_effect=sqlite3.OperationalError('disk full')):
             response = self.client.post('/api/backtests', json=self.request)
         self.assertEqual(response.status_code, 503)
         self.assertIn('could not be saved', response.json()['detail'])

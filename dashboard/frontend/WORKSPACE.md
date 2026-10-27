@@ -1,21 +1,21 @@
 # Backtester workspace
 
-The landing area is now a read-only Portfolio dashboard. Navigation includes Portfolio, Strategies, Research, Saved experiments and Journal. Portfolio/strategy APIs are in `api/workspace.py`; IBKR snapshot callbacks are in `backtester/ibkr_portfolio.py`. Refreshes are manual, complete snapshots are persisted to SQLite, and stale/offline viewing never implies an active connection. Position notes link account+contract IDs to manual strategy records. The existing Journal remains browser-local. See `START_HERE.md` for scope and privacy limitations.
+The landing area is now a read-only Portfolio dashboard. Navigation includes Portfolio, Strategies, Research, Saved experiments and Journal. Portfolio/strategy APIs are in `dashboard/api/workspace.py`; IBKR snapshot callbacks are in `dashboard/backtester/ibkr_portfolio.py`. Refreshes are manual, complete snapshots are persisted to SQLite, and stale/offline viewing never implies an active connection. Position notes link account+contract IDs to manual strategy records. The existing Journal remains browser-local. See `START_HERE.md` for scope and privacy limitations.
 
-For everyday use, double-click **Start Backtester.vbs** in the repository root. It builds the frontend when needed, starts the local app, and opens the browser. Use its launcher window to stop the app. See `../START_HERE.md` for saved-run storage and backups.
+For everyday use, double-click **Start Backtester.vbs** in the repository root. It builds the frontend when needed, starts the local app, and opens the browser. Use its launcher window to stop the app. See `../../START_HERE.md` for saved-run storage and backups.
 
 The commands below remain available for development:
 
 Start the API from the repository root:
 
 ```powershell
-.\.venv\Scripts\python.exe -m uvicorn api.main:app --reload --port 8000
+.\.venv\Scripts\python.exe -m uvicorn dashboard.api.main:app --reload --port 8000
 ```
 
 In a second terminal:
 
 ```powershell
-cd frontend
+cd dashboard/frontend
 npm run dev
 ```
 

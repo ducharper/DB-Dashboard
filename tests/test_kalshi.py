@@ -1,8 +1,8 @@
 import unittest
 from unittest.mock import patch
 from fastapi.testclient import TestClient
-from api.main import app
-from api.kalshi import SizingRequest, size_trade
+from dashboard.api.main import app
+from dashboard.api.kalshi import SizingRequest, size_trade
 
 class KalshiTests(unittest.TestCase):
     def settings(self, **changes):
@@ -36,7 +36,7 @@ class KalshiTests(unittest.TestCase):
             self.assertEqual(client.post('/api/kalshi/size', json={**data, key: value}).status_code, 422)
         self.assertEqual(client.post('/api/kalshi/size', json={**data, 'cost_allowance': .6}).status_code, 422)
 
-    @patch('api.kalshi.fetch_public')
+    @patch('dashboard.api.kalshi.fetch_public')
     def test_quotes_pagination_and_missing_values(self, fetch):
         fetch.return_value = {'markets': [{'ticker': 'TEST', 'market_type': 'binary', 'yes_ask_dollars': '0.5500', 'no_ask_dollars': '0', 'yes_bid_dollars': 'NaN'}], 'cursor': 'next'}
         response = TestClient(app).get('/api/kalshi/markets?series=KXNFLGAME&cursor=abc')
@@ -48,6 +48,6 @@ class KalshiTests(unittest.TestCase):
         self.assertEqual(data['cursor'], 'next')
         self.assertEqual(fetch.call_args.args[0]['cursor'], 'abc')
 
-    @patch('api.kalshi.urlopen', side_effect=TimeoutError)
+    @patch('dashboard.api.kalshi.urlopen', side_effect=TimeoutError)
     def test_provider_failure(self, fetch):
         self.assertEqual(TestClient(app).get('/kalshi/markets').status_code, 502)

@@ -1,20 +1,20 @@
 from math import isfinite
-from pathlib import Path
+from dashboard.paths import PROJECT_ROOT, FRONTEND_ROOT
 import sqlite3
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
-from api import history
-from api.workspace import router as workspace_router
-from api.kalshi import router as kalshi_router
+from dashboard.api import history
+from dashboard.api.workspace import router as workspace_router
+from dashboard.api.kalshi import router as kalshi_router
 
-from api.schemas import BacktestRequest, BacktestResponse
-from api.strategy_factory import create_strategy
-from backtester.runner import run_backtest
-from backtester.errors import MarketDataUnavailableError
+from dashboard.api.schemas import BacktestRequest, BacktestResponse
+from dashboard.api.strategy_factory import create_strategy
+from dashboard.backtester.runner import run_backtest
+from dashboard.backtester.errors import MarketDataUnavailableError
 
-app = FastAPI(title="Practice Backtester")
+app = FastAPI(title="Trading Dashboard")
 
 app.include_router(workspace_router)
 app.include_router(workspace_router, prefix='/api')
@@ -29,7 +29,7 @@ async def workspace_storage_error(request, exc):
 @app.get('/market-snapshot')
 @app.get('/api/market-snapshot')
 def read_market_snapshot():
-    from api.market import market_snapshot
+    from dashboard.api.market import market_snapshot
     return market_snapshot()
 
 @app.post("/backtests", response_model=BacktestResponse)
@@ -100,7 +100,7 @@ def create_backtest(request: BacktestRequest) -> dict:
 
 @app.get('/health')
 def health():
-    return {'app': 'practice-backtester', 'workspace': str(Path(__file__).resolve().parents[1])}
+    return {'app': 'practice-backtester', 'workspace': str(PROJECT_ROOT)}
 
 
 @app.get('/runs')
@@ -136,6 +136,6 @@ def remove_run(run_id: str):
 
 
 # The launcher builds the frontend first, then serves everything on one local port.
-frontend = Path(__file__).resolve().parents[1] / 'frontend' / 'dist'
+frontend = FRONTEND_ROOT / 'dist'
 if frontend.is_dir():
     app.mount('/', StaticFiles(directory=frontend, html=True), name='frontend')

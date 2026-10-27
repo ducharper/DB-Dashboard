@@ -1,7 +1,8 @@
 """Public Kalshi data and hypothetical binary-contract sizing. No order execution."""
 from datetime import datetime, timezone
 import json
-from math import floor, isfinite
+from math import isfinite
+from dashboard.kalshi.kalshi_fmm import size_trade as calculate_trade
 from urllib.parse import urlencode
 from urllib.request import urlopen
 from urllib.error import URLError
@@ -9,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field, ConfigDict
 
 router = APIRouter(prefix='/kalshi', tags=['Kalshi research'])
-BASE_URL = 'https://external-api.kalshi.com/trade-api/v2'
+BASE_URL = 'https://external-dashboard.api.kalshi.com/trade-api/v2'
 
 
 def fetch_public(params):
@@ -71,24 +72,11 @@ class SizingRequest(BaseModel):
 
 @router.post('/size')
 def size_trade(r: SizingRequest):
-    cost = r.price + r.cost_allowance
-    if cost >= 1:
-        raise HTTPException(422, 'Price plus cost allowance must be less than the $1 payout.')
-    conservative_p = max(0, r.probability - r.uncertainty)
-    edge = conservative_p - cost
-    fraction = max(0, edge / (1 - cost)) * r.kelly_fraction
-    budget = max(0, min(r.bankroll * fraction, r.bankroll * r.trade_cap,
-                       r.bankroll * r.event_cap - r.existing_event_risk, r.available_cash))
-    contracts = floor(budget / cost)
-    risk = contracts * cost
-    return {'contracts': contracts, 'max_loss': risk, 'allocation': risk / r.bankroll,
-            'expected_profit': contracts * (r.probability - cost),
-            'conservative_profit': contracts * edge, 'loss_probability': 1 - r.probability,
-            'conservative_probability': conservative_p, 'break_even': cost,
-            'profit_if_win': contracts * (1 - cost),
-            'decision': 'Research candidate' if contracts else 'Pass',
-            'reason': 'Positive conservative edge within your limits.' if contracts else
-                      'No conservative edge, insufficient budget, or event limit reached.'}
+    try:
+        return calculate_trade(**r.model_dump())
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
 
 # Recorder endpoints are read-only with respect to the exchange.
 class RecordingRequest(BaseModel):
@@ -98,13 +86,13 @@ class RecordingRequest(BaseModel):
 
 @router.get('/btc-research')
 def btc_research():
-    from backtester.kalshi_recorder import recorder
+    from dashboard.kalshi.recorder import recorder
     return recorder.status()
 
 
 @router.post('/btc-research/start')
 def start_btc_research(request: RecordingRequest):
-    from backtester.kalshi_recorder import recorder
+    from dashboard.kalshi.recorder import recorder
     try:
         return {'session_id': recorder.start(request.minutes)}
     except ValueError as exc:
@@ -113,6 +101,6 @@ def start_btc_research(request: RecordingRequest):
 
 @router.post('/btc-research/stop')
 def stop_btc_research():
-    from backtester.kalshi_recorder import recorder
+    from dashboard.kalshi.recorder import recorder
     recorder.stop()
     return {'message': 'Stop requested. The current connection will close shortly.'}

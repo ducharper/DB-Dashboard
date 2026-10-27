@@ -1,5 +1,5 @@
 import pandas as pd
-from strategies.base import Strategy
+from dashboard.strategies.base import Strategy
 
 class MomentumStrategy(Strategy):
     def __init__(self, lookback: int):

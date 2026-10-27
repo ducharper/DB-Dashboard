@@ -1,6 +1,6 @@
 r"""One-shot TWS connectivity check. Requests server time only; never sends orders.
 
-Run with .venv\Scripts\python.exe check_ibkr.py while paper TWS is open.
+Run with .venv\Scripts\python.exe -m dashboard.cli.check_ibkr while paper TWS is open.
 Requires the official IBKR Python API installed from IBKR's downloaded SDK.
 """
 import threading

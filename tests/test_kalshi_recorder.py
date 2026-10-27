@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 from contextlib import closing
-from backtester import kalshi_recorder as kr
+from dashboard.kalshi import recorder as kr
 
 class RecorderTests(unittest.TestCase):
     def setUp(self):
@@ -88,7 +88,7 @@ class RecorderTests(unittest.TestCase):
             def recv(self,timeout):
                 recorder.stop_event.set()
                 return json.dumps(frame)
-        with patch('websockets.sync.client.connect',return_value=Socket()), patch('api.kalshi.fetch_public',return_value={'markets':[{'ticker':'KXBTC15M-TEST','market_type':'binary'}]}), patch.object(kr,'headers',return_value={}):
+        with patch('websockets.sync.client.connect',return_value=Socket()), patch('dashboard.api.kalshi.fetch_public',return_value={'markets':[{'ticker':'KXBTC15M-TEST','market_type':'binary'}]}), patch.object(kr,'headers',return_value={}):
             recorder.run('session',object(),1)
         self.assertEqual([c['params']['channels'] for c in commands], [['cfbenchmarks_value'],['orderbook_delta'],['ticker']])
         self.assertTrue(all(c['cmd']=='subscribe' for c in commands))
@@ -99,7 +99,7 @@ class RecorderTests(unittest.TestCase):
 
     def test_failed_connections_stop_after_five_attempts(self):
         recorder=kr.Recorder()
-        with patch('api.kalshi.fetch_public',side_effect=OSError('secret-bearing error')), patch.object(recorder.stop_event,'wait'):
+        with patch('dashboard.api.kalshi.fetch_public',side_effect=OSError('secret-bearing error')), patch.object(recorder.stop_event,'wait'):
             recorder.run('session',object(),1)
         status=recorder.status()
         self.assertEqual(status['session']['state'],'failed')
@@ -121,7 +121,7 @@ class RecorderTests(unittest.TestCase):
                 except StopIteration:
                     recorder.stop_event.set()
                     return json.dumps({'type':'orderbook_snapshot','sid':2,'seq':1,'msg':{}})
-        with patch('websockets.sync.client.connect',return_value=Socket()) as socket, patch('api.kalshi.fetch_public',return_value={'markets':[{'ticker':'KXBTC15M-TEST','market_type':'binary'}]}), patch.object(kr,'headers',return_value={}), patch.object(recorder.stop_event,'wait'):
+        with patch('websockets.sync.client.connect',return_value=Socket()) as socket, patch('dashboard.api.kalshi.fetch_public',return_value={'markets':[{'ticker':'KXBTC15M-TEST','market_type':'binary'}]}), patch.object(kr,'headers',return_value={}), patch.object(recorder.stop_event,'wait'):
             recorder.run('session',object(),1)
         self.assertEqual(socket.call_count,2)
         status=recorder.status()

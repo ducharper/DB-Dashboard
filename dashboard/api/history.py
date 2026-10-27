@@ -5,11 +5,12 @@ import sqlite3
 from contextlib import closing
 from datetime import datetime, timezone
 from pathlib import Path
+from dashboard.paths import DATA_ROOT
 from uuid import uuid4
 
 
 def database_path() -> Path:
-    return Path(os.environ.get('BACKTEST_DB_PATH', Path(__file__).resolve().parents[1] / 'data' / 'backtests.sqlite3'))
+    return Path(os.environ.get('BACKTEST_DB_PATH', DATA_ROOT / 'backtests.sqlite3'))
 
 
 def connect():

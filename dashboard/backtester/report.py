@@ -1,6 +1,6 @@
 import pandas as pd
 
-from backtester.metrics import total_return, annualized_volatility, sharpe_ratio, max_drawdown, annualized_return, \
+from dashboard.backtester.metrics import total_return, annualized_volatility, sharpe_ratio, max_drawdown, annualized_return, \
     sortino_ratio, time_in_market, number_of_market_entries
 
 

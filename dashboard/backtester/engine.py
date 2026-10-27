@@ -1,7 +1,7 @@
 import pandas as pd
 
-from backtester.friction import calculate_transaction_costs
-from strategies.base import Strategy
+from dashboard.backtester.friction import calculate_transaction_costs
+from dashboard.strategies.base import Strategy
 
 class BackTestEngine:
     def __init__(self, data: pd.DataFrame, strategy: Strategy, initial_cash: float, cost_bps: float):

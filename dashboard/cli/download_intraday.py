@@ -2,10 +2,10 @@
 import argparse
 from datetime import date, datetime, timezone
 import json
-from pathlib import Path
+from dashboard.paths import DATA_ROOT
 
-from backtester.errors import MarketDataUnavailableError
-from backtester.intraday_data import download_minutes
+from dashboard.backtester.errors import MarketDataUnavailableError
+from dashboard.backtester.intraday_data import download_minutes
 
 
 def main():
@@ -20,7 +20,7 @@ def main():
     except MarketDataUnavailableError as exc:
         parser.exit(1, f'Download failed: {exc}\n')
     # A new directory preserves earlier downloads and keeps user input out of paths.
-    output = Path(__file__).resolve().parent / 'data' / 'intraday' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
+    output = DATA_ROOT / 'intraday' / datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')
     output.mkdir(parents=True, exist_ok=False)
     exported = frame.copy()
     exported.insert(0, 'timestamp_new_york', frame.index.tz_convert('America/New_York'))

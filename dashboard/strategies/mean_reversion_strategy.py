@@ -1,6 +1,6 @@
 import pandas as pd
 
-from strategies.base import Strategy
+from dashboard.strategies.base import Strategy
 
 class MeanReversionStrategy(Strategy):
     def __init__(self, mean_window: int, entry_distance: float, exit_distance: float):

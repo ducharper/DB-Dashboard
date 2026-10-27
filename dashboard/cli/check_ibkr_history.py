@@ -4,7 +4,7 @@ import threading
 from datetime import datetime, timedelta, timezone
 
 from ibapi.contract import Contract
-from check_ibkr import ConnectionCheck
+from dashboard.cli.check_ibkr import ConnectionCheck
 
 
 class HistoryCheck(ConnectionCheck):

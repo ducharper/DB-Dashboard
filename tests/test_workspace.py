@@ -8,10 +8,10 @@ import unittest
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
-from api.main import app
-from api.workspace import database
-from backtester.errors import MarketDataUnavailableError
-from backtester.ibkr_portfolio import fetch_portfolio, number
+from dashboard.api.main import app
+from dashboard.api.workspace import database
+from dashboard.backtester.errors import MarketDataUnavailableError
+from dashboard.backtester.ibkr_portfolio import fetch_portfolio, number
 
 
 def fixture():
@@ -29,7 +29,7 @@ class WorkspaceTests(unittest.TestCase):
         self.env.stop(); self.temp.cleanup()
 
     def refresh(self):
-        with patch('backtester.ibkr_portfolio.fetch_portfolio', return_value=fixture()):
+        with patch('dashboard.backtester.ibkr_portfolio.fetch_portfolio', return_value=fixture()):
             response = self.client.post('/api/portfolio/refresh')
         self.assertEqual(response.status_code, 200, response.text)
         return response.json()
@@ -53,7 +53,7 @@ class WorkspaceTests(unittest.TestCase):
         self.assertEqual(self.client.put('/api/portfolio/notes', json=note).status_code, 200)
         second = self.refresh()
         self.assertNotEqual(first['snapshot']['id'], second['snapshot']['id'])
-        with patch('backtester.ibkr_portfolio.fetch_portfolio', side_effect=AssertionError('Offline read must not contact IBKR')):
+        with patch('dashboard.backtester.ibkr_portfolio.fetch_portfolio', side_effect=AssertionError('Offline read must not contact IBKR')):
             reopened = TestClient(app).get('/api/portfolio').json()
         self.assertEqual(reopened['notes'][0]['thesis'], 'Test thesis')
         self.assertEqual(reopened['notes'][0]['strategy_id'], strategy['id'])
@@ -62,7 +62,7 @@ class WorkspaceTests(unittest.TestCase):
 
     def test_failure_preserves_previous_snapshot(self):
         first = self.refresh()
-        with patch('backtester.ibkr_portfolio.fetch_portfolio', side_effect=MarketDataUnavailableError('Offline')):
+        with patch('dashboard.backtester.ibkr_portfolio.fetch_portfolio', side_effect=MarketDataUnavailableError('Offline')):
             self.assertEqual(self.client.post('/api/portfolio/refresh').status_code, 502)
         self.assertEqual(self.client.get('/api/portfolio').json(), first)
 

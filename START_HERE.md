@@ -1,10 +1,39 @@
-# One-click startup
+# Trading dashboard
+
+Application code now lives under `dashboard/`. Run commands below from the repository root.
+
+| Location | Purpose |
+| --- | --- |
+| `dashboard/api/` | HTTP endpoints and request validation |
+| `dashboard/frontend/` | React interface and frontend build |
+| `dashboard/backtester/` | Historical simulations, metrics and data adapters |
+| `dashboard/strategies/` | Executable backtest strategies |
+| `dashboard/kalshi/kalshi_fmm.py` | Experimental settlement probability and trade-helper sizing |
+| `dashboard/kalshi/recorder.py` | Kalshi recording and data coverage checks |
+| `dashboard/cli/` | IBKR diagnostics and minute-bar downloads |
+| `dashboard/ninjatrader/` | NinjaTrader research source |
+| `dashboard/launcher.py` | Desktop launcher implementation |
+| `dashboard/paths.py` | Shared application, frontend and storage paths |
+| `tests/` | Automated tests |
+| `data/` | Existing local databases, downloads and launcher logs |
+
+The root `launcher.py` remains the startup entry point. Stop the existing launcher before starting the reorganized version; a running Python server retains its old imports and frontend path. Existing data stays in the root `data/` folder, and database environment overrides still work. No database migration is needed.
+
+```powershell
+.\.venv\Scripts\python.exe launcher.py
+```
+
+The previous `main.py` demo is now `.\.venv\Scripts\python.exe -m dashboard.backtester`. Diagnostic scripts use module commands, such as `.\.venv\Scripts\python.exe -m dashboard.cli.check_ibkr_history`.
+
+The trade helper delegates sizing to `dashboard/kalshi/kalshi_fmm.py`. Its `p_yes` formula is preserved as an experimental model; the UI still uses manually supplied probabilities. Connecting it to live inputs requires validating reference prices, sample coverage, volatility estimation and model calibration first. It does not execute trades.
+
+## One-click startup
 
 Double-click **Start Backtester.vbs** in this folder. A small launcher window starts the app and opens your browser. Keep the launcher open; use **Stop & close** when finished. You can create a Windows shortcut to that file on your desktop.
 
 The app runs only on this computer at http://127.0.0.1:8765. No hosting account or separate terminals are needed. First startup (and startup after frontend changes) builds the website; subsequent launches reuse the build. Starting a second launcher opens the existing app instead of starting another server. Closing an extra launcher does not stop the original one.
 
-Prerequisites: the project's `.venv` with its existing Python dependencies, Node.js, and installed frontend dependencies. If dependencies are missing, run `npm install` inside `frontend` once. The launcher never installs software automatically. Startup failures are reported in its window; details are in `data/launcher.log`.
+Prerequisites: the project's `.venv` with its existing Python dependencies, Node.js, and installed frontend dependencies. If dependencies are missing, run `npm install` inside `dashboard/frontend` once. The launcher never installs software automatically. Startup failures are reported in its window; details are in `data/launcher.log`.
 
 ## Trading workspace: first milestone
 
@@ -44,10 +73,10 @@ Restart the launcher after updating. Old saved runs remain readable and default 
 
 ### One-minute research data
 
-`download_intraday.py` retrieves one completed US stock/ETF session from paper TWS as one-minute OHLCV bars. Keep TWS logged in on port 7497 with Read-Only API enabled. It uses client ID 50 and sends no orders.
+`-m dashboard.cli.download_intraday` retrieves one completed US stock/ETF session from paper TWS as one-minute OHLCV bars. Keep TWS logged in on port 7497 with Read-Only API enabled. It uses client ID 50 and sends no orders.
 
 ```powershell
-.\.venv\Scripts\python.exe download_intraday.py --symbol AAPL --date 2026-10-05 --exchange NASDAQ
+.\.venv\Scripts\python.exe -m dashboard.cli.download_intraday --symbol AAPL --date 2026-10-05 --exchange NASDAQ
 ```
 
 Choose a completed trading date before today. Each successful download creates a new folder under `data/intraday/` with `bars.csv` and `metadata.json`. CSV timestamps mark the **start** of the minute and include UTC and America/New_York offsets. Metadata records the request, source, coverage and warnings. Prices are split-adjusted TRADES and exclude dividends. Availability depends on IBKR permissions and history.
@@ -64,13 +93,13 @@ Minute OHLCV does not contain bid/ask spreads, auction imbalances, or within-min
 
 ### Optional IBKR connection check
 
-The standalone TWS connectivity check is `check_ibkr.py`. It connects only to local port 7497 with client ID 47, requests server time, then disconnects. Keep **Read-Only API** checked. This check does not verify historical-data permissions; choose IBKR in the app to run a historical-data backtest.
+The standalone TWS connectivity check is `-m dashboard.cli.check_ibkr`. It connects only to local port 7497 with client ID 47, requests server time, then disconnects. Keep **Read-Only API** checked. This check does not verify historical-data permissions; choose IBKR in the app to run a historical-data backtest.
 
 Install the Python library from the official IBKR API installer, not the unrelated PyPI download. For the locally installed version:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install "C:/TWS API 1051.01/source/pythonclient"
-.\.venv\Scripts\python.exe check_ibkr.py
+.\.venv\Scripts\python.exe -m dashboard.cli.check_ibkr
 ```
 
 This SDK installs `ibapi==1051.1` and requires `protobuf==5.29.5`. The latter replaces the previously installed protobuf version in this project's environment. Adjust the source path if you install another SDK version. No account credentials are stored by the check.

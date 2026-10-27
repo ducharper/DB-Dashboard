@@ -1,0 +1,3 @@
+# Optional dependencies for the authenticated, read-only BTC recorder.
+cryptography>=46,<49
+websockets>=15,<18

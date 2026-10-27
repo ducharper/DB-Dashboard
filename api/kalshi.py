@@ -89,3 +89,30 @@ def size_trade(r: SizingRequest):
             'decision': 'Research candidate' if contracts else 'Pass',
             'reason': 'Positive conservative edge within your limits.' if contracts else
                       'No conservative edge, insufficient budget, or event limit reached.'}
+
+# Recorder endpoints are read-only with respect to the exchange.
+class RecordingRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    minutes: int = Field(default=30, ge=1, le=120)
+
+
+@router.get('/btc-research')
+def btc_research():
+    from backtester.kalshi_recorder import recorder
+    return recorder.status()
+
+
+@router.post('/btc-research/start')
+def start_btc_research(request: RecordingRequest):
+    from backtester.kalshi_recorder import recorder
+    try:
+        return {'session_id': recorder.start(request.minutes)}
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from exc
+
+
+@router.post('/btc-research/stop')
+def stop_btc_research():
+    from backtester.kalshi_recorder import recorder
+    recorder.stop()
+    return {'message': 'Stop requested. The current connection will close shortly.'}

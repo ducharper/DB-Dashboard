@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './kalshi.css'
+import BitcoinResearch from './BitcoinResearch'
 type Market = { ticker: string; event_ticker: string; title: string; yes_sub_title: string; close_time: string; status: string; yes_bid: number | null; yes_ask: number | null; no_bid: number | null; no_ask: number | null; volume: number | null; rules_primary: string; rules_secondary: string }
 type Snapshot = { markets: Market[]; cursor: string; fetched_at: string }
 type Result = { contracts: number; max_loss: number; allocation: number; expected_profit: number; conservative_profit: number; loss_probability: number; conservative_probability: number; break_even: number; profit_if_win: number; decision: string; reason: string }
@@ -13,8 +14,8 @@ async function request<T>(path: string, signal: AbortSignal, body?: unknown): Pr
   return data
 }
 export default function KalshiDashboard({active}: {active: boolean}) {
-  const [series, setSeries] = useState('KXNFLGAME')
-  const [query, setQuery] = useState({series: 'KXNFLGAME', cursor: ''})
+  const [series, setSeries] = useState('KXBTC15M')
+  const [query, setQuery] = useState({series: 'KXBTC15M', cursor: ''})
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -51,6 +52,7 @@ export default function KalshiDashboard({active}: {active: boolean}) {
     ['kelly_fraction', 'Fraction of Kelly (%)', '0.1', '100'], ['trade_cap', 'Maximum bankroll per trade (%)', '0.1', '100'], ['event_cap', 'Maximum bankroll per related event (%)', '0.1', '100']]
   return <section className="dashboard-page kalshi-page">
     <header className="dashboard-heading"><div><span className="eyebrow">PREDICTION MARKET RESEARCH</span><h1>Kalshi</h1><p>Explore contracts. Test a probability estimate. Size a hypothetical position.</p></div></header>
+    <BitcoinResearch />
     <form className="kalshi-toolbar" onSubmit={e => {e.preventDefault(); setSnapshot(null); setSelected(''); setQuery({series: series.trim().toUpperCase(), cursor: ''})}}>
       <label>Series ticker<input value={series} onChange={e => setSeries(e.target.value)} placeholder="Blank for all markets" pattern="[A-Za-z0-9-]*" maxLength={100} /></label><button type="submit" disabled={loading}>Load markets</button><button type="button" disabled={loading} onClick={() => setRefresh(n => n + 1)}>Refresh</button>
       <label className="kalshi-check"><input type="checkbox" checked={auto} onChange={e => setAuto(e.target.checked)} />Refresh every 30 seconds</label>

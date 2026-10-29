@@ -88,3 +88,36 @@ waits and support for Retry-After (seconds or HTTP date). Cached successful resp
 are reused immediately. Rerun the same command after an interrupted download; do not
 use --offline until dataset.json has been saved successfully. Avoid simultaneous
 research downloads or other heavy API consumers on the same account.
+
+Trade exports: trades.csv and stressed_trades.csv now use a compact reader-facing schema.
+Detailed rows are retained in trades_detailed.csv and stressed_trades_detailed.csv.
+Predicted win probability refers to the PURCHASED side (NO uses 1-p).
+Money fields are USD; probabilities are fractions (0.70 means 70 percent).
+Expected profit is after modelled entry costs. Result means the purchased side won.
+Cumulative profit is ordered by settlement time. UTC entry times include the timezone.
+Observation and validation files retain their diagnostic schemas.
+
+## Probability calibration
+
+Fit using an existing observations.csv and its adjacent report.json:
+
+    .\.venv\Scripts\python.exe -m dashboard.kalshi.research.calibration --observations data/kalshi_research/1792382400_1792987200/observations.csv --output data/kalshi_research/calibration_oct19_25.json
+
+This fits sigmoid(a + b * logit(p)). a adjusts YES bias; b adjusts confidence.
+The objective is weighted log loss with a small fixed ridge penalty toward (0,1).
+Every contract receives equal total weight; only predictions with tau >= 60 are fitted.
+The 30-window minimum is an input guard, not evidence of reliability. Training scores
+are in-sample. Endpoints are clipped to [0.0001,0.9999]. Coefficients are bounded
+and the artifact records whether a bound was hit. No trading profit is optimized.
+
+Test on later dates with --calibration data/kalshi_research/calibration_oct19_25.json.
+The pipeline rejects overlapping training predictions and mismatched EWMA settings
+or a changed fairvalue.py. It allows 60 seconds after the last training close for
+outcome availability (a conservative research assumption, not guaranteed live availability).
+The test dataset stays in the normal date folder. Calibrated results go in a separate
+calibrated_<file-hash> subfolder with original_trades.csv and a comparison in report.json.
+Both strategies see identical observations and retain identical trading settings.
+The active probability is calibrated; p_raw retains the original. mean, sd and z
+still describe the raw model distribution. Final-minute probabilities are transformed
+but were excluded from fitting and remain prediction-only. The calibration changes
+no live dashboard behavior. Do not tune against the untouched test period repeatedly.

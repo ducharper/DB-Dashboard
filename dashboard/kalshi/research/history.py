@@ -1,11 +1,11 @@
 """Read-only Kalshi downloader. Raw responses are cached without credentials."""
-from concurrent.futures import ThreadPoolExecutor
 import base64
 import hashlib
 import json
 import os
 import time
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.request import Request, urlopen
 from urllib.parse import urlencode, quote
@@ -25,6 +25,8 @@ class Client:
         self.cache.mkdir(parents=True, exist_ok=True)
         self.offline = offline
         self.key = None
+        self.next_request = 0.0
+        self.request_interval = 1.0
 
     def headers(self, path):
         if self.key is None:
@@ -51,6 +53,30 @@ class Client:
                 "KALSHI-ACCESS-TIMESTAMP": stamp,
                 "KALSHI-ACCESS-SIGNATURE": base64.b64encode(signature).decode()}
 
+    @staticmethod
+    def pause(seconds):
+        # Long server-directed waits are broken into short sleeps.
+        while seconds > 0:
+            part = min(seconds, 30.0)
+            time.sleep(part)
+            seconds -= part
+
+    @staticmethod
+    def retry_delay(error, attempt):
+        backoff = min(60.0, 5.0 * 2 ** attempt)
+        hint = error.headers.get("Retry-After") if error.headers else None
+        if hint:
+            try:
+                delay = float(hint)
+            except (TypeError, ValueError):
+                try:
+                    delay = parsedate_to_datetime(hint).timestamp() - time.time()
+                except (ValueError, TypeError, OverflowError):
+                    delay = 0
+            if delay > backoff:
+                return delay
+        return backoff
+
     def get(self, path, params=None, authenticated=False, fresh=False):
         url = BASE + path + ("?" + urlencode(sorted((params or {}).items())) if params else "")
         target = self.cache / (hashlib.sha256(url.encode()).hexdigest() + ".json")
@@ -58,7 +84,9 @@ class Client:
             return json.loads(target.read_text())["response"]
         if self.offline:
             raise ValueError("Missing cached response for " + path)
-        for attempt in range(4):
+        for attempt in range(8):
+            self.pause(max(0.0, self.next_request - time.monotonic()))
+            self.next_request = time.monotonic() + self.request_interval
             try:
                 headers = self.headers(path) if authenticated else {}
                 with urlopen(Request(url, headers=headers), timeout=30) as response:
@@ -67,11 +95,15 @@ class Client:
                 temporary.write_text(json.dumps({"url": url, "downloaded_at": datetime.now(timezone.utc).isoformat(),
                                                   "response": data}), encoding="utf-8")
                 temporary.replace(target)
-                time.sleep(.3)
                 return data
             except HTTPError as exc:
-                if exc.code in (429, 500, 502, 503, 504) and attempt < 3:
-                    time.sleep(2 ** attempt)
+                if exc.code in (429, 500, 502, 503, 504) and attempt < 7:
+                    delay = self.retry_delay(exc, attempt)
+                    if exc.code == 429:
+                        self.request_interval = min(10.0, self.request_interval * 2)
+                    self.next_request = max(self.next_request, time.monotonic() + delay)
+                    print(f"Kalshi HTTP {exc.code}: waiting {delay:.0f}s before retry "
+                          f"{attempt+1}/7 (requests spaced {self.request_interval:.0f}s apart).", flush=True)
                     continue
                 raise ValueError(f"Kalshi HTTP {exc.code} at {path}; check access/service status.") from None
 
@@ -116,11 +148,12 @@ def download(client, start, end, lookback=300):
                                   "period_interval": 1})["candlesticks"]
         return ticker, result
     candles = {}
-    with ThreadPoolExecutor(max_workers=4) as pool:
-        for i, (ticker, values) in enumerate(pool.map(fetch_candles, sorted(markets.items())), 1):
-            candles[ticker] = values
-            if i % 25 == 0 or i == len(markets):
-                print(f"Quotes: {i}/{len(markets)}", flush=True)
+    # Sequential requests share one pacing clock. Cached responses need no wait.
+    for i, pair in enumerate(sorted(markets.items()), 1):
+        ticker, values = fetch_candles(pair)
+        candles[ticker] = values
+        if i % 25 == 0 or i == len(markets):
+            print(f"Quotes: {i}/{len(markets)} (including cached responses)", flush=True)
     ticks = []
     first = (min(epoch(m["close_time"])-900 for m in markets.values())-lookback-60)//3600*3600
     for hour in range(first, (end//3600+1)*3600, 3600):

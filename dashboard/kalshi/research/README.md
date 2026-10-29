@@ -81,3 +81,10 @@ the backtester. p_market is the matching bid/ask midpoint, not a last-trade fill
 PASS means the diagnostics did not flag a problem; it is not a profitability verdict.
 Final-minute probabilities retain the model's continuous-price threshold approximation;
 settlement rounding and strict/inclusive ties are not explicitly modelled.
+
+Download pacing: uncached requests run sequentially, at least one second apart.
+HTTP 429 slows subsequent requests and triggers up to seven retries, with increasing
+waits and support for Retry-After (seconds or HTTP date). Cached successful responses
+are reused immediately. Rerun the same command after an interrupted download; do not
+use --offline until dataset.json has been saved successfully. Avoid simultaneous
+research downloads or other heavy API consumers on the same account.

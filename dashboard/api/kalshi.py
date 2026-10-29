@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 import json
 from math import isfinite
-from dashboard.kalshi.kalshi_fmm import size_trade as calculate_trade
+from dashboard.kalshi.fairvalue import size_trade as calculate_trade
 from urllib.parse import urlencode
 from urllib.request import urlopen
 from urllib.error import URLError

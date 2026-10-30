@@ -101,8 +101,9 @@ def main():
         save_csv(folder/"trades.csv",trade_view(trades),TRADE_FIELDS)
         save_csv(folder/"stressed_trades.csv",trade_view(stressed),TRADE_FIELDS)
         (folder/"report.json").write_text(json.dumps(report,indent=2),encoding="utf-8")
-        print(json.dumps({"baseline":summary,"stressed":stress_summary,
-                          "observations":len(rows),"skipped":len(skipped)},indent=2))
+        display = ({"comparison":report["comparison"]} if calibration_metadata is not None
+                   else {"baseline":summary,"stressed":stress_summary})
+        print(json.dumps({**display,"observations":len(rows),"skipped":len(skipped)},indent=2))
         print("Results:",folder.resolve())
         if not rows:
             print("No usable observations. Inspect skipped.csv; this is not evidence of no edge.")

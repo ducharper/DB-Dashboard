@@ -121,3 +121,27 @@ The active probability is calibrated; p_raw retains the original. mean, sd and z
 still describe the raw model distribution. Final-minute probabilities are transformed
 but were excluded from fitting and remain prediction-only. The calibration changes
 no live dashboard behavior. Do not tune against the untouched test period repeatedly.
+
+## Time-aware calibration experiment
+
+Use --method logistic_time when fitting. The constant method remains the default.
+The correction is sigmoid(a + b(tau)*logit(p)), where
+b(tau) = (1-tau/900)*b_late + (tau/900)*b_early.
+Both endpoints are constrained positive, preserving probability ordering at each time.
+The fixed ridge penalty also shrinks early/late differences. Final-minute samples
+are excluded from fitting; this experiment evaluates minute-level trading only.
+The observations argument accepts multiple paths. Their adjacent reports must have
+identical EWMA settings. For previously calibrated observations the trainer explicitly
+uses p_raw, avoiding double calibration. Duplicate window/checkpoints fail loudly.
+Old constant logistic JSON artifacts remain supported.
+
+Development: October 19-27 was already examined. Three expanding chronological splits
+keep whole contracts together, using earlier windows for fitting and later windows for
+validation. Results are in data/kalshi_research/time_calibration_development.json.
+These are development diagnostics, not a clean held-out estimate.
+
+Frozen comparison: fit both constant and time-aware corrections on October 19-27;
+then test October 28 Eastern (2026-10-28T04:00:00Z to 2026-10-29T04:00:00Z)
+without changing threshold, sizing, volatility, or fees. Each artifact creates its own
+calibrated subfolder. Compare raw, constant and time-aware on identical observations.
+After this result is examined, that day is no longer an untouched test period.
